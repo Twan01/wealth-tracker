@@ -1,0 +1,71 @@
+# docker-compose.yml — Wealth Tracker self-hosting stack
+# Quick start (CPU-only):
+#   docker compose up
+# Then open http://localhost:5173
+#
+# GPU users (Nvidia) layer in the override:
+#   docker compose -f docker-compose.yml -f compose.gpu.yml up
+
+services:
+  app:
+    # Build locally during development; replace with image: ghcr.io/twan01/wealth-tracker:latest
+    # once Phase 18-02 publishes the image.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wealth-tracker:local
+    container_name: wealth-tracker-app
+    restart: unless-stopped
+    ports:
+      - "5173:5556"
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      AT_BASE: /app/files
+      AT_DATA: /app/data
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5556/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: wealth-tracker-ollama
+    restart: unless-stopped
+    # The official entrypoint runs `ollama serve`. We wrap it so the model is
+    # auto-pulled on first boot (idempotent: skips if already in the volume).
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        SERVER_PID=$$!
+        # Wait for the server to accept connections (max ~30s)
+        for i in $$(seq 1 30); do
+          if ollama list >/dev/null 2>&1; then
+            break
+          fi
+          sleep 1
+        done
+        echo "[ollama-entrypoint] pulling llama3.1:8b (no-op if cached)"
+        ollama pull llama3.1:8b || echo "[ollama-entrypoint] model pull failed; AI features will degrade silently"
+        wait $$SERVER_PID
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+
+volumes:
+  ollama-data:

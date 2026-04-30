@@ -1,0 +1,18 @@
+# compose.gpu.yml — optional Nvidia GPU override.
+# Layered on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f compose.gpu.yml up
+#
+# Requirements on the host:
+#   - Nvidia driver installed
+#   - nvidia-container-toolkit installed and configured
+#     (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
