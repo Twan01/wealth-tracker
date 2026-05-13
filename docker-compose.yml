@@ -8,12 +8,7 @@
 
 services:
   app:
-    # Build locally during development; replace with image: ghcr.io/twan01/wealth-tracker:latest
-    # once Phase 18-02 publishes the image.
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: wealth-tracker:local
+    image: ghcr.io/twan01/wealth-tracker:latest
     container_name: wealth-tracker-app
     restart: unless-stopped
     ports:
@@ -58,14 +53,13 @@ services:
         wait $$SERVER_PID
     volumes:
       - ollama-data:/root/.ollama
-    ports:
-      - "11434:11434"
+    # Port not exposed to host - app reaches Ollama via compose network (http://ollama:11434)
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD-SHELL", "ollama list | grep -q 'llama3.1:8b'"]
       interval: 30s
       timeout: 10s
-      start_period: 30s
-      retries: 5
+      start_period: 120s
+      retries: 10
 
 volumes:
   ollama-data:

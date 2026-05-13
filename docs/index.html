@@ -938,8 +938,11 @@
 
       if (versionBadge) versionBadge.textContent = version + ' available'
       if (downloadVersion) downloadVersion.textContent = version
-    } catch {
-      // Silent fallback — buttons already have generic text and link to releases page
+    } catch (err) {
+      // API may fail due to rate limiting (60 req/hr unauthenticated) or network issues.
+      // Buttons already have generic text and link to releases page as fallback.
+      console.warn('Failed to fetch latest release info:', err)
+      if (downloadVersion) downloadVersion.textContent = 'latest'
     }
   }
 
