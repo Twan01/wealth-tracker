@@ -2,7 +2,7 @@
 
 Track your entire wealth in one private desktop app — stocks, crypto, real estate, and more.
 
-**Latest: v1.9.7
+**Latest: v1.9.8
 
 ## Download
 
